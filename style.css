@@ -192,6 +192,14 @@ button:active {
   transform: scale(0.96);
 }
 
+/* Accessibility: Focus states for keyboard navigation */
+button:focus-visible,
+.primary-btn:focus-visible,
+.secondary-btn:focus-visible {
+  outline: 2px solid var(--primary-green);
+  outline-offset: 2px;
+}
+
 .primary-btn {
   width: 100%;
   background: var(--primary-gradient);
@@ -581,32 +589,8 @@ button:active {
   margin-bottom: 2px;
 }
 
-.hcp-input {
-  width: 100%;
-  padding: 6px 2px;
-  text-align: center;
-  font-size: 0.9rem;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--glass-border);
-  color: white;
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-
-.hcp-input::-webkit-outer-spin-button,
-.hcp-input::-webkit-inner-spin-button {
-  appearance: none;
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.hcp-input:focus {
-  border-color: var(--primary-green);
-  background: rgba(0, 255, 115, 0.05);
-}
-
-/* Par inputs - match hcp-input styling for grid cells */
+/* Grid cell inputs (handicap and par) */
+.hcp-input,
 .par-input {
   width: 100%;
   padding: 6px 2px;
@@ -620,6 +604,8 @@ button:active {
   appearance: textfield;
 }
 
+.hcp-input::-webkit-outer-spin-button,
+.hcp-input::-webkit-inner-spin-button,
 .par-input::-webkit-outer-spin-button,
 .par-input::-webkit-inner-spin-button {
   appearance: none;
@@ -627,6 +613,7 @@ button:active {
   margin: 0;
 }
 
+.hcp-input:focus,
 .par-input:focus {
   border-color: var(--primary-green);
   background: rgba(0, 255, 115, 0.05);
