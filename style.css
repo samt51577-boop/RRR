@@ -390,28 +390,6 @@ button:focus-visible,
 }
 
 /* Scoring */
-.score-grid {
-  display: flex;
-  gap: 15px;
-}
-
-.team-col {
-  background: var(--glass-bg);
-  padding: 20px;
-  border-radius: 20px;
-  border: 1px solid var(--glass-border);
-  flex: 1;
-}
-
-.team-name {
-  font-size: 0.9rem;
-  color: var(--text-dim);
-  text-align: center;
-  margin-bottom: 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 /* Score Rows */
 .player-score-row {
@@ -466,12 +444,6 @@ button:focus-visible,
   font-size: 0.8rem;
   color: var(--text-dim);
   letter-spacing: 1px;
-}
-
-.score-detail {
-  font-family: monospace;
-  font-size: 0.8rem;
-  color: var(--text-dim);
 }
 
 /* Badges */
@@ -617,14 +589,6 @@ button:focus-visible,
 .par-input:focus {
   border-color: var(--primary-green);
   background: rgba(0, 255, 115, 0.05);
-}
-
-.win-green {
-  color: var(--primary-green);
-}
-
-.loss-red {
-  color: var(--danger);
 }
 
 /* Screens & Utils */

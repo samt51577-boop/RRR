@@ -58,11 +58,20 @@ const US_STATES = [
   "Custom",
 ];
 
+// Game defaults and constants
+const DEFAULTS = {
+  BASE_BET: 1,
+  SLOPE_RATING: 113,
+  COURSE_RATING: 72,
+  HOLES: 18,
+  DEFAULT_PAR: 4,
+};
+
 // Safe localStorage helpers (handles private browsing, quota exceeded, etc.)
 const safeStorage = {
   getItem(key) {
     try {
-      return safeStorage.getItem(key);
+      return localStorage.getItem(key);
     } catch (e) {
       console.warn("localStorage.getItem failed:", e.message);
       return null;
@@ -70,7 +79,7 @@ const safeStorage = {
   },
   setItem(key, value) {
     try {
-      safeStorage.setItem(key, value);
+      localStorage.setItem(key, value);
       return true;
     } catch (e) {
       console.warn("localStorage.setItem failed:", e.message);
@@ -210,8 +219,10 @@ class RollReRollGame {
     this.addFavoriteBtn = document.getElementById("add-favorite-btn");
     this.favoritesSection = document.getElementById("favorites-section");
     this.favoritesTableBody = document.getElementById("favorites-table-body");
-    this.favorites =
-      safeJsonParse(safeStorage.getItem("rollReRollFavorites"), []);
+    this.favorites = safeJsonParse(
+      safeStorage.getItem("rollReRollFavorites"),
+      [],
+    );
 
     this.courseContinueBtn = document.getElementById("course-continue-btn");
     this.addCourseModal = document.getElementById("add-course-modal");
@@ -305,7 +316,6 @@ class RollReRollGame {
 
     this.confirmYesBtn = document.getElementById("confirm-yes-btn");
     this.confirmCancelBtn = document.getElementById("confirm-cancel-btn");
-    this.setupBackBtn = document.getElementById("setup-back-btn");
     this.setupBackBtn = document.getElementById("setup-back-btn");
     this.changeCourseBtn = document.getElementById("change-course-btn");
     this.openAddCourseBtn = document.getElementById("open-add-course-btn");
@@ -547,7 +557,6 @@ class RollReRollGame {
         e.target.closest(".radio-card").classList.add("selected");
       });
     });
-
   }
 
   toggleMenu(show) {
@@ -1119,7 +1128,6 @@ class RollReRollGame {
     try {
       const s = this.inputs.state.value;
       const cId = this.inputs.course.value;
-
 
       if (!s || !cId) return null;
 
