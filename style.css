@@ -871,3 +871,66 @@ input:checked + .slider {
 .scorecard-table tr:hover .total-cell {
   background: rgba(255, 217, 0, 0.2);
 }
+
+/* Responsive: Small phones (320px and below) */
+@media (max-width: 320px) {
+  .app-container {
+    padding: 10px;
+  }
+
+  .stake-amount {
+    font-size: 3rem;
+  }
+
+  .hero-logo h1 {
+    font-size: 2.5rem;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+  }
+
+  .hole-indicator {
+    font-size: 1rem;
+  }
+
+  .modal-content {
+    padding: 15px;
+  }
+}
+
+/* Responsive: Medium phones (375px and below) */
+@media (max-width: 375px) {
+  .stake-amount {
+    font-size: 3.5rem;
+  }
+
+  .hcp-grid,
+  .par-grid {
+    gap: 3px;
+  }
+}
+
+/* Responsive: Tablets and larger (768px and above) */
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 600px;
+    padding: 30px;
+  }
+
+  .stake-amount {
+    font-size: 5rem;
+  }
+
+  .modal-content {
+    max-width: 500px;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    padding: 18px 40px;
+    font-size: 1.1rem;
+  }
+}

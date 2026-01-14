@@ -1438,18 +1438,13 @@ class RollReRollGame {
       this.umbrellaValueDisplay.textContent = "$" + valuePerCat;
       this.currentStakeDisplay.textContent = valuePerCat + "/pt";
 
-      // Greenie Buttons
+      // Greenie Buttons - CSS handles styling via .selected class
       this.greenieBtns.forEach((btn) => {
         const team = btn.dataset.team;
-        if (team === this.state.umbrellaState.greenie) {
-          btn.classList.add("selected");
-          btn.style.background = "var(--primary-green)";
-          btn.style.color = "black";
-        } else {
-          btn.classList.remove("selected");
-          btn.style.background = "none";
-          btn.style.color = "white";
-        }
+        btn.classList.toggle(
+          "selected",
+          team === this.state.umbrellaState.greenie,
+        );
       });
     }
   }
