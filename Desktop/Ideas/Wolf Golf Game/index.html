@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WÜLF | Lead the Hunt</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="public/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <section id="setup-view" class="view active">
+            <h1 class="logo-main">WÜLF</h1>
+            <p class="tagline">JOIN THE PACK. LEAD THE HUNT.</p>
+
+            <div class="main-card">
+                <div class="selection-row">
+                    <div class="input-field">
+                        <label>👥 Group Size</label>
+                        <select id="group-size">
+                            <option value="5">5 Players</option>
+                            <option value="4">4 Players</option>
+                        </select>
+                    </div>
+                    <div class="input-field">
+                        <label>⛳ Course</label>
+                        <select id="course-select">
+                            <option value="dmcc-north">DMCC North</option>
+                            <option value="willow-creek">Willow Creek</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="player-inputs">
+                    <div class="player-entry">
+                        <label>Player 1 (You)</label>
+                        <div class="entry-row">
+                            <input type="text" id="p1-name" value="Sam">
+                            <input type="number" id="hcp1" step="0.1" class="hcp-badge" value="10.2">
+                        </div>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="btn-start">START ROUND</button>
+            </div>
+        </section>
+
+        <section id="game-view" class="view hidden">
+            <header class="game-header">
+                <button id="prev-hole-btn" class="back-link hidden">← Back</button>
+                <div class="hole-status">
+                    <span class="label">HOLE</span>
+                    <span id="current-hole-num" class="value">1</span>
+                </div>
+                <div class="wolf-status">
+                    <span class="label">THE WOLF</span>
+                    <div id="current-wolf-name" class="wolf-badge-name">Someone</div>
+                </div>
+            </header>
+
+            <div id="phase-selection" class="phase">
+                <h2 class="phase-title">Choose Your Path</h2>
+                <div class="wolf-options">
+                    <button class="card-wolf" id="btn-lone">🐺 Lone Wolf</button>
+                    <button class="card-wolf" id="btn-blind">🙈 Blind Wolf</button>
+                </div>
+                <h3>Pick a Partner</h3>
+                <div id="partner-grid" class="partner-grid"></div>
+            </div>
+
+            <div id="phase-result" class="phase hidden">
+                <h2 class="phase-title">Who won the hole?</h2>
+                <div class="winner-btns">
+                    <button class="btn-win" id="btn-win-wolf">WOLF TEAM</button>
+                    <button class="btn-win" id="btn-win-pigs">THE PIGS</button>
+                    <button class="btn-win" id="btn-win-wash">WASH / TIE</button>
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="public/script.js"></script>
+</body>
+
+</html>
