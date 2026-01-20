@@ -1152,8 +1152,10 @@ class RollReRollGame {
         const selectedCourse = this.state.course;
         // Check if there is a 'persisted' base bet the user might have set previously
         const previousBaseBet = this.state.settings ? this.state.settings.baseBet : 10;
+        const playerCount = parseInt(this.setupInputs.playerCountSelect.value) || 2;
 
         this.resetState();
+        this.state.playerCount = playerCount;
 
         // Restore course
         if (selectedCourse) {
@@ -1192,8 +1194,6 @@ class RollReRollGame {
         let defaultSlope = courseData.slope || 113;
         let defaultRating = courseData.rating || 72;
 
-        const playerCount = parseInt(this.setupInputs.playerCountSelect.value) || 2;
-
         // Helper to safely get value directly from DOM since cache is gone/dynamic
         const getDynVal = (id) => {
             const el = document.getElementById(id);
@@ -1207,29 +1207,43 @@ class RollReRollGame {
             p4: { name: 'Player 4', index: 0, ch: 0 }
         };
 
-        for (let i = 1; i <= 4; i++) {
-            if (i <= playerCount) {
-                const name = getDynVal(`p${i}-name`) || `Player ${i}`;
-                const idxVal = getDynVal(`p${i}-ghin`);
-                const idx = this.fetchHandicapIndex(idxVal);
+        if (playerCount === 2) {
+            // 1v1 Mode: Map Input 1 -> P1, Input 2 -> P3 (Team 2)
+            const p1Name = getDynVal('p1-name') || 'Player 1';
+            const p1Idx = this.fetchHandicapIndex(getDynVal('p1-ghin'));
+            const p2Name = getDynVal('p2-name') || 'Player 2';
+            const p2Idx = this.fetchHandicapIndex(getDynVal('p2-ghin'));
 
-                // User removed slope/rating inputs per player in new UI to simplify. using Course Default.
-                const slp = defaultSlope;
+            const slp = defaultSlope;
 
-                this.state.players[`p${i}`] = {
-                    name: name,
-                    index: idx,
-                    ch: Math.round(idx * (slp / 113)),
-                    slope: slp
-                };
-            } else {
-                // Reset unused players
-                this.state.players[`p${i}`] = { name: `Player ${i}`, index: 0, ch: 0, slope: defaultSlope };
+            this.state.players.p1 = { name: p1Name, index: p1Idx, ch: Math.round(p1Idx * (slp / 113)), slope: slp };
+            this.state.players.p3 = { name: p2Name, index: p2Idx, ch: Math.round(p2Idx * (slp / 113)), slope: slp };
+            // P2 and P4 remain dummies
+            this.state.teams.team1.name = p1Name;
+            this.state.teams.team2.name = p2Name;
+
+        } else {
+            // 4 Players (2v2)
+            for (let i = 1; i <= 4; i++) {
+                if (i <= playerCount) {
+                    const name = getDynVal(`p${i}-name`) || `Player ${i}`;
+                    const idxVal = getDynVal(`p${i}-ghin`);
+                    const idx = this.fetchHandicapIndex(idxVal);
+                    const slp = defaultSlope;
+
+                    this.state.players[`p${i}`] = {
+                        name: name,
+                        index: idx,
+                        ch: Math.round(idx * (slp / 113)),
+                        slope: slp
+                    };
+                } else {
+                    this.state.players[`p${i}`] = { name: `Player ${i}`, index: 0, ch: 0, slope: defaultSlope };
+                }
             }
+            this.state.teams.team1.name = `${this.state.players.p1.name} & ${this.state.players.p2.name}`;
+            this.state.teams.team2.name = `${this.state.players.p3.name} & ${this.state.players.p4.name}`;
         }
-
-        this.state.teams.team1.name = `${this.state.players.p1.name} & ${this.state.players.p2.name}`;
-        this.state.teams.team2.name = `${this.state.players.p3.name} & ${this.state.players.p4.name}`;
 
 
 
@@ -1350,6 +1364,19 @@ class RollReRollGame {
         updatePlayerUI('p2', this.p2Display, this.p2Pops);
         updatePlayerUI('p3', this.p3Display, this.p3Pops);
         updatePlayerUI('p4', this.p4Display, this.p4Pops);
+
+        // Visibility Toggles for 1v1
+        const count = this.state.playerCount || 4;
+        const p2Row = document.getElementById('p2-score-row');
+        const p4Row = document.getElementById('p4-score-row');
+
+        if (count === 2) {
+            if (p2Row) p2Row.style.display = 'none';
+            if (p4Row) p4Row.style.display = 'none';
+        } else {
+            if (p2Row) p2Row.style.display = 'flex';
+            if (p4Row) p4Row.style.display = 'flex';
+        }
 
         // Update Hole & Stake
         this.currentHoleDisplay.textContent = this.state.currentHole;
@@ -1605,7 +1632,13 @@ class RollReRollGame {
             const s3 = parseInt(this.p3ScoreInput.value);
             const s4 = parseInt(this.p4ScoreInput.value);
 
-            if (isNaN(s1) || isNaN(s2) || isNaN(s3) || isNaN(s4)) {
+            const count = this.state.playerCount || 4;
+            let valid = !isNaN(s1);
+            if (count > 2) valid = valid && !isNaN(s2);
+            valid = valid && !isNaN(s3);
+            if (count > 2) valid = valid && !isNaN(s4);
+
+            if (!valid) {
                 alert("Please enter scores for all players");
                 return;
             }
@@ -1617,12 +1650,18 @@ class RollReRollGame {
             const calcNet = (gross, pid) => gross - this.getPops(playingHcps[pid], currentHoleIndex);
 
             const n1 = calcNet(s1, 'p1');
-            const n2 = calcNet(s2, 'p2');
+            const n2 = isNaN(s2) ? 999 : calcNet(s2, 'p2');
             const n3 = calcNet(s3, 'p3');
-            const n4 = calcNet(s4, 'p4');
+            const n4 = isNaN(s4) ? 999 : calcNet(s4, 'p4');
 
-            const t1Best = Math.min(n1, n2);
-            const t2Best = Math.min(n3, n4);
+            let t1Best, t2Best;
+            if (count === 2) {
+                t1Best = n1;
+                t2Best = n3;
+            } else {
+                t1Best = Math.min(n1, n2);
+                t2Best = Math.min(n3, n4);
+            }
 
             let winner = null;
             let amount = 0;
