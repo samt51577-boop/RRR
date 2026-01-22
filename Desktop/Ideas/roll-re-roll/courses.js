@@ -50,7 +50,7 @@ const COURSES_BY_STATE = {
         },
         {
             id: "the_harvester",
-            name: "The Harvester (2026)",
+            name: "The Harvester",
             slope: 140,
             rating: 76.5,
             pars: [4, 4, 3, 5, 4, 5, 4, 3, 4, 4, 4, 4, 4, 3, 5, 4, 3, 5],

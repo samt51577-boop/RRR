@@ -694,7 +694,7 @@ class RollReRollGame {
             const parts = nameVal.trim().split(/\s+/);
 
             // Check for State Override at end of string (e.g. "Joe Smarro TX")
-            let state = 'CA'; // Default fallback
+            let state = 'IA'; // Default fallback
             // Attempt to get current UI selection
             if (this.inputs && this.inputs.state && this.inputs.state.value) {
                 state = this.inputs.state.value;
@@ -881,7 +881,7 @@ class RollReRollGame {
                 inputContainer.innerHTML += `
                     <div class="player-input-group" style="margin-bottom: 15px;">
                         <div class="input-row" style="display: flex; gap: 8px; align-items: center;">
-                            <input type="text" id="p${i}-name" value="${defaultName}" placeholder="Player ${i} Name (e.g. Joe Smarro TX)" style="flex: 2; padding:10px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
+                            <input type="text" id="p${i}-name" value="${defaultName}" placeholder="Player ${i} Name (e.g. Joe Smith IA)" style="flex: 2; padding:10px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
                             <input type="text" id="p${i}-ghin" value="${defaultHcp}" placeholder="HCP or GHIN" style="flex: 1; text-align: center; padding:10px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
                             <button type="button" onclick="window.game.fetchGhin(${i}, this)" style="padding: 10px; background: var(--neon-blue); border: none; border-radius: 8px; color: black; font-weight: bold; cursor: pointer;">🔍</button>
                         </div>
