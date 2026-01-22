@@ -701,11 +701,16 @@ class RollReRollGame {
             }
 
             const potentialState = parts[parts.length - 1].toUpperCase();
+
+            // Debug log
+            console.log("Input:", nameVal, "Potential State:", potentialState);
+
             // Simple check for 2-letter code if existing US_STATES array or generic regex
             // Assuming US_STATES is available in this scope (it is global constant in this file)
             if (US_STATES.includes(potentialState)) {
                 state = potentialState;
                 parts.pop(); // Remove state from name
+                console.log("State override detected:", state);
             }
 
             let firstName = '';
