@@ -11,6 +11,7 @@ const US_STATES = [
 
 class RollReRollGame {
     constructor() {
+        this.checkEnvironment();
         this.cacheDOM();
         this.populateStates();
         this.populateCourses();
@@ -30,6 +31,15 @@ class RollReRollGame {
             this.courseScreen.classList.add('hidden');
             this.setupScreen.classList.add('hidden');
             this.gameScreen.classList.add('hidden');
+        }
+    }
+
+    checkEnvironment() {
+        if (window.location.protocol === 'file:') {
+            const warning = document.createElement('div');
+            warning.style.cssText = "position:fixed; top:0; left:0; width:100%; background:#d32f2f; color:white; text-align:center; padding:12px; z-index:99999; font-family:sans-serif; box-shadow:0 4px 6px rgba(0,0,0,0.3);";
+            warning.innerHTML = "⚠️ <strong>Setup Required:</strong> You are viewing this as a file. To use GHIN Search, please use the server: <a href='http://localhost:3000' style='color:#ffd700; font-weight:bold; text-decoration:underline; margin-left:10px;'>Open http://localhost:3000</a>";
+            document.body.prepend(warning);
         }
     }
 
@@ -667,6 +677,166 @@ class RollReRollGame {
             });
         });
     }
+    async fetchGhin(playerIndex, btnElement) {
+        const input = document.getElementById(`p${playerIndex}-ghin`);
+        const nameInput = document.getElementById(`p${playerIndex}-name`);
+        const val = input.value.trim();
+        const nameVal = nameInput.value.trim();
+
+        // Determine search mode
+        let url = '';
+        if (val && /^\d+$/.test(val)) {
+            // Numeric -> GHIN ID search
+            url = `/api/handicaps/${val}`;
+        } else if (nameVal) {
+            // Name search
+            // Name search logic with State detection
+            const parts = nameVal.trim().split(/\s+/);
+
+            // Check for State Override at end of string (e.g. "Joe Smarro TX")
+            let state = 'CA'; // Default fallback
+            // Attempt to get current UI selection
+            if (this.inputs && this.inputs.state && this.inputs.state.value) {
+                state = this.inputs.state.value;
+            }
+
+            const potentialState = parts[parts.length - 1].toUpperCase();
+            // Simple check for 2-letter code if existing US_STATES array or generic regex
+            // Assuming US_STATES is available in this scope (it is global constant in this file)
+            if (US_STATES.includes(potentialState)) {
+                state = potentialState;
+                parts.pop(); // Remove state from name
+            }
+
+            let firstName = '';
+            let lastName = '';
+
+            if (parts.length > 1) {
+                lastName = parts.pop();
+                firstName = parts.join(' ');
+            } else if (parts.length === 1) {
+                lastName = parts[0];
+            }
+
+            if (state === 'Custom') state = '';
+
+            url = `/api/handicaps/search?last_name=${lastName}`;
+            if (firstName) url += `&first_name=${firstName}`;
+            if (state) url += `&state=${state}`;
+
+            // Store used state for error message
+            this.lastSearchState = state;
+        } else {
+            alert("Please enter a GHIN number OR a Name to search.");
+            return;
+        }
+
+        // Visual feedback
+        const originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '⏳';
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Search failed or not found");
+
+            const data = await response.json();
+
+            if (Array.isArray(data)) {
+                // Search Results
+                if (data.length === 0) {
+                    throw new Error("No golfers found with that name in " + (this.lastSearchState || 'Location'));
+                } else if (data.length === 1) {
+                    // Exact match
+                    const p = data[0];
+                    nameInput.value = p.name;
+                    input.value = p.handicap_index;
+                } else {
+                    // Multiple matches - Allow user to pick
+                    this.showGolferSelectionModal(data, (selected) => {
+                        nameInput.value = selected.name;
+                        input.value = selected.handicap_index;
+                        if (selected.ghin) input.setAttribute("title", "GHIN: " + selected.ghin);
+                    });
+                }
+
+            } else {
+                // Single object (direct lookup)
+                if (data.name) nameInput.value = data.name;
+                if (data.handicap_index !== undefined) input.value = data.handicap_index;
+            }
+
+            btnElement.innerHTML = '✅';
+            setTimeout(() => btnElement.innerHTML = originalText, 2000);
+
+        } catch (e) {
+            console.error(e);
+            if (window.location.protocol === 'file:') {
+                alert("⚠️ Connection Error: GHIN Search requires the local server.\n\nPlease open http://localhost:3000 in your browser.");
+            } else {
+                alert("Search Error: " + e.message);
+            }
+            btnElement.innerHTML = '❌';
+            setTimeout(() => btnElement.innerHTML = originalText, 2000);
+        }
+    }
+
+    showGolferSelectionModal(golfers, callback) {
+        // Remove existing if any
+        const existing = document.getElementById('golfer-select-modal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'golfer-select-modal';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center; z-index: 10000;
+        `;
+
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: var(--card-bg, #222); border: 1px solid var(--neon-blue, #0ff);
+            padding: 20px; border-radius: 12px; max-width: 400px; width: 90%;
+            max-height: 80vh; overflow-y: auto; text-align: center;
+        `;
+
+        const title = document.createElement('h3');
+        title.textContent = "Select Golfer";
+        title.style.color = "white";
+        content.appendChild(title);
+
+        const list = document.createElement('div');
+        list.style.cssText = "display: flex; flex-direction: column; gap: 10px; margin-top: 15px;";
+
+        golfers.slice(0, 50).forEach(g => { // Increased limit to 50 to see more results
+            const btn = document.createElement('button');
+            btn.style.cssText = `
+                background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+                padding: 10px; color: white; border-radius: 6px; cursor: pointer; text-align: left;
+            `;
+            btn.innerHTML = `
+                <div style="font-weight:bold; color:var(--neon-blue, #0ff)">${g.name}</div>
+                <div style="font-size:0.8rem; color:#aaa;">HCP: ${g.handicap_index} | GHIN: ${g.ghin}</div>
+                <div style="font-size:0.75rem; color:#888;">${g.club || ''} (${g.state})</div>
+            `;
+            btn.onclick = () => {
+                callback(g);
+                modal.remove();
+            };
+            list.appendChild(btn);
+        });
+
+        const cancel = document.createElement('button');
+        cancel.textContent = "Cancel";
+        cancel.style.cssText = "margin-top: 15px; padding: 8px 16px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer;";
+        cancel.onclick = () => modal.remove();
+
+        content.appendChild(list);
+        content.appendChild(cancel);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+    }
+
     togglePlayerInputs() {
         console.log("Toggle Player Inputs Triggered");
         if (!this.setupInputs || !this.setupInputs.playerCountSelect) {
@@ -697,22 +867,18 @@ class RollReRollGame {
             for (let i = 1; i <= count; i++) {
                 // Check if we have saved data for this player slot
                 const saved = savedPlayers[i - 1] || { name: '', hcp: '' };
-                // Default logic (e.g. User specified Sam/10.2 but I'll stick to saved or empty/defaults)
-                // The snippet requested "Sam" and "10.2" logic.
                 let defaultName = saved.name || '';
                 let defaultHcp = saved.hcp || '';
 
-                // If Player 1 and no saved data, maybe hint user specifics? 
-                // "The user has 10.2 index". Let's put that as placeholder or value if empty?
-                // The snippet implies value.
                 if (i === 1 && !defaultName) defaultName = "Sam";
                 if (i === 1 && !defaultHcp) defaultHcp = "10.2";
 
                 inputContainer.innerHTML += `
                     <div class="player-input-group" style="margin-bottom: 15px;">
-                        <div class="input-row" style="display: flex; gap: 8px;">
-                            <input type="text" id="p${i}-name" value="${defaultName}" placeholder="Player ${i} Name" style="flex: 2; padding:10px; border-radius:8px; border:1px solid var(--glass-border); bg:rgba(0,0,0,0.3); color:white;">
-                            <input type="text" id="p${i}-ghin" value="${defaultHcp}" placeholder="HCP" style="flex: 1; text-align: center; padding:10px; border-radius:8px; border:1px solid var(--glass-border); bg:rgba(0,0,0,0.3); color:white;">
+                        <div class="input-row" style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="p${i}-name" value="${defaultName}" placeholder="Player ${i} Name (e.g. Joe Smarro TX)" style="flex: 2; padding:10px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
+                            <input type="text" id="p${i}-ghin" value="${defaultHcp}" placeholder="HCP or GHIN" style="flex: 1; text-align: center; padding:10px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
+                            <button type="button" onclick="window.game.fetchGhin(${i}, this)" style="padding: 10px; background: var(--neon-blue); border: none; border-radius: 8px; color: black; font-weight: bold; cursor: pointer;">🔍</button>
                         </div>
                     </div>`;
             }
