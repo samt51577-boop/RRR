@@ -40,6 +40,11 @@ class RollReRollGame {
             warning.style.cssText = "position:fixed; top:0; left:0; width:100%; background:#d32f2f; color:white; text-align:center; padding:12px; z-index:99999; font-family:sans-serif; box-shadow:0 4px 6px rgba(0,0,0,0.3);";
             warning.innerHTML = "⚠️ <strong>Setup Required:</strong> You are viewing this as a file. To use GHIN Search, please use the server: <a href='http://localhost:3000' style='color:#ffd700; font-weight:bold; text-decoration:underline; margin-left:10px;'>Open http://localhost:3000</a>";
             document.body.prepend(warning);
+        } else {
+            // Check if API seems to be running on the same domain
+            fetch('/api/handicaps/search').catch(err => {
+                console.warn("GHIN API seems unreachable. If you've just uploaded to your domain, make sure your Node.js server is running and the /api proxy is configured.");
+            });
         }
     }
 
@@ -685,32 +690,26 @@ class RollReRollGame {
 
         // Determine search mode
         let url = '';
+        const apiBase = window.API_BASE || '';
+
         if (val && /^\d+$/.test(val)) {
             // Numeric -> GHIN ID search
-            url = `/api/handicaps/${val}`;
+            url = `${apiBase}/api/handicaps/${val}`;
         } else if (nameVal) {
-            // Name search
-            // Name search logic with State detection
-            const parts = nameVal.trim().split(/\s+/);
+            // Clean up name: remove common separators like commas or dots
+            const cleanedName = nameVal.replace(/[,.]/g, ' ').trim();
+            const parts = cleanedName.split(/\s+/);
 
             // Check for State Override at end of string (e.g. "Joe Smarro TX")
             let state = 'IA'; // Default fallback
-            // Attempt to get current UI selection
             if (this.inputs && this.inputs.state && this.inputs.state.value) {
                 state = this.inputs.state.value;
             }
 
             const potentialState = parts[parts.length - 1].toUpperCase();
-
-            // Debug log
-            console.log("Input:", nameVal, "Potential State:", potentialState);
-
-            // Simple check for 2-letter code if existing US_STATES array or generic regex
-            // Assuming US_STATES is available in this scope (it is global constant in this file)
             if (US_STATES.includes(potentialState)) {
                 state = potentialState;
                 parts.pop(); // Remove state from name
-                console.log("State override detected:", state);
             }
 
             let firstName = '';
@@ -725,12 +724,12 @@ class RollReRollGame {
 
             if (state === 'Custom') state = '';
 
-            url = `/api/handicaps/search?last_name=${lastName}`;
-            if (firstName) url += `&first_name=${firstName}`;
-            if (state) url += `&state=${state}`;
+            url = `${apiBase}/api/handicaps/search?last_name=${encodeURIComponent(lastName)}`;
+            if (firstName) url += `&first_name=${encodeURIComponent(firstName)}`;
+            if (state) url += `&state=${encodeURIComponent(state)}`;
 
-            // Store used state for error message
             this.lastSearchState = state;
+            console.log(`[GHIN Fetch] Extracted name: "${firstName} ${lastName}", state: "${state}"`);
         } else {
             alert("Please enter a GHIN number OR a Name to search.");
             return;
@@ -742,9 +741,22 @@ class RollReRollGame {
 
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error("Search failed or not found");
+            let data;
 
-            const data = await response.json();
+            try {
+                data = await response.json();
+            } catch (jsonErr) {
+                // If not JSON, it might be a 404 HTML page from the host
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}. The API might not be configured correctly on this domain.`);
+                }
+                throw new Error("Invalid response from server");
+            }
+
+            if (!response.ok) {
+                const errorMsg = data.details || data.error || `Error ${response.status}: ${response.statusText}`;
+                throw new Error(errorMsg);
+            }
 
             if (Array.isArray(data)) {
                 // Search Results
@@ -763,7 +775,6 @@ class RollReRollGame {
                         if (selected.ghin) input.setAttribute("title", "GHIN: " + selected.ghin);
                     });
                 }
-
             } else {
                 // Single object (direct lookup)
                 if (data.name) nameInput.value = data.name;
@@ -774,11 +785,17 @@ class RollReRollGame {
             setTimeout(() => btnElement.innerHTML = originalText, 2000);
 
         } catch (e) {
-            console.error(e);
+            console.error("Fetch Error:", e);
+
+            let message = e.message;
+            if (message === "Failed to fetch") {
+                message = "Could not connect to the search server. This usually means the Node.js backend is not running at " + (apiBase || window.location.origin) + ".";
+            }
+
             if (window.location.protocol === 'file:') {
                 alert("⚠️ Connection Error: GHIN Search requires the local server.\n\nPlease open http://localhost:3000 in your browser.");
             } else {
-                alert("Search Error: " + e.message);
+                alert("Search Error: " + message);
             }
             btnElement.innerHTML = '❌';
             setTimeout(() => btnElement.innerHTML = originalText, 2000);
@@ -878,14 +895,24 @@ class RollReRollGame {
                 if (i === 1 && !defaultName) defaultName = "Sam";
                 if (i === 1 && !defaultHcp) defaultHcp = "10.2";
 
-                inputContainer.innerHTML += `
-                    <div class="player-input-group" style="margin-bottom: 15px;">
-                        <div class="input-row" style="display: flex; gap: 8px; align-items: center;">
-                            <input type="text" id="p${i}-name" value="${defaultName}" placeholder="Player ${i} Name (e.g. Joe Smith IA)" style="flex: 2; padding:10px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
-                            <input type="text" id="p${i}-ghin" value="${defaultHcp}" placeholder="HCP or GHIN" style="flex: 1; text-align: center; padding:10px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
-                            <button type="button" onclick="window.game.fetchGhin(${i}, this)" style="padding: 10px; background: var(--neon-blue); border: none; border-radius: 8px; color: black; font-weight: bold; cursor: pointer;">🔍</button>
-                        </div>
+                const playerRow = document.createElement('div');
+                playerRow.className = 'player-input-group';
+                playerRow.style.marginBottom = '15px';
+                playerRow.innerHTML = `
+                    <div class="input-row" style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="p${i}-name" value="${defaultName}" placeholder="Player ${i} Name (e.g. Joe Smith IA)" style="flex: 2; padding:10px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
+                        <input type="text" id="p${i}-ghin" value="${defaultHcp}" placeholder="HCP or GHIN" style="flex: 1; text-align: center; padding:10px; border-radius:8px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:white;">
+                        <button type="button" id="p${i}-search-btn" onclick="window.game.fetchGhin(${i}, this)" style="padding: 10px; background: var(--neon-blue); border: none; border-radius: 8px; color: black; font-weight: bold; cursor: pointer;">🔍</button>
                     </div>`;
+                inputContainer.appendChild(playerRow);
+
+                // Automatically trigger search if we have data and we haven't already searched
+                if (defaultName || defaultHcp) {
+                    setTimeout(() => {
+                        const btn = document.getElementById(`p${i}-search-btn`);
+                        if (btn) this.fetchGhin(i, btn);
+                    }, 500 + (i * 200)); // Stagger them slightly
+                }
             }
         } else {
             setupArea.style.display = 'none';
