@@ -694,7 +694,8 @@ class RollReRollGame {
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 apiBase = 'http://localhost:3000';
             } else if (window.location.hostname.includes('samtierney10.com')) {
-                apiBase = window.location.protocol + '//' + window.location.hostname + ':3000';
+                // Use the live Render backend
+                apiBase = 'https://wolf-golf-game.onrender.com';
             }
         }
 
