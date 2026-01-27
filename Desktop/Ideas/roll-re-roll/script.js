@@ -89,7 +89,8 @@ class RollReRollGame {
     }
 
     loadState() {
-        const saved = localStorage.getItem('rollReRollState');
+        // Retrieve it when the page loads
+        const saved = localStorage.getItem('rrr_scorecard');
         if (saved) {
             this.state = JSON.parse(saved);
         } else {
@@ -98,7 +99,8 @@ class RollReRollGame {
     }
 
     saveState() {
-        localStorage.setItem('rollReRollState', JSON.stringify(this.state));
+        // Save the current game state
+        localStorage.setItem('rrr_scorecard', JSON.stringify(this.state));
     }
 
     cacheDOM() {
