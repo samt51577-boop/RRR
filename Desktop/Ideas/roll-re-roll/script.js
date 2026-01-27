@@ -688,9 +688,17 @@ class RollReRollGame {
         const val = input.value.trim();
         const nameVal = nameInput.value.trim();
 
-        // Determine search mode
+        // Smart API Discovery
+        let apiBase = window.API_BASE || '';
+        if (!apiBase) {
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                apiBase = 'http://localhost:3000';
+            } else if (window.location.hostname.includes('samtierney10.com')) {
+                apiBase = window.location.protocol + '//' + window.location.hostname + ':3000';
+            }
+        }
+
         let url = '';
-        const apiBase = window.API_BASE || '';
 
         if (val && /^\d+$/.test(val)) {
             // Numeric -> GHIN ID search
@@ -729,7 +737,7 @@ class RollReRollGame {
             if (state) url += `&state=${encodeURIComponent(state)}`;
 
             this.lastSearchState = state;
-            console.log(`[GHIN Fetch] Extracted name: "${firstName} ${lastName}", state: "${state}"`);
+            console.log(`[GHIN Fetch] URL: ${url}`);
         } else {
             alert("Please enter a GHIN number OR a Name to search.");
             return;
@@ -748,7 +756,10 @@ class RollReRollGame {
             } catch (jsonErr) {
                 // If not JSON, it might be a 404 HTML page from the host
                 if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}. The API might not be configured correctly on this domain.`);
+                    if (response.status === 404) {
+                        throw new Error(`The GHIN API was not found (404). Please ensure the Node.js server is running and accessible at ${apiBase}`);
+                    }
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}.`);
                 }
                 throw new Error("Invalid response from server");
             }
