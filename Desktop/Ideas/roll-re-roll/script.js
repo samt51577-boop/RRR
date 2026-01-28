@@ -42,7 +42,7 @@ class RollReRollGame {
             document.body.prepend(warning);
         } else {
             // Check if API seems to be running on the same domain
-            fetch('/api/handicaps/search').catch(err => {
+            fetch('api/handicaps/search').catch(err => {
                 console.warn("GHIN API seems unreachable. If you've just uploaded to your domain, make sure your Node.js server is running and the /api proxy is configured.");
             });
         }
@@ -694,18 +694,18 @@ class RollReRollGame {
         let apiBase = window.API_BASE || '';
         if (!apiBase) {
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                apiBase = 'http://localhost:3000';
-            } else if (window.location.hostname.includes('samtierney10.com')) {
-                // Use the live Render backend
-                apiBase = 'https://wolf-golf-game.onrender.com';
+                apiBase = 'http://localhost:3000/';
+            } else if (window.location.hostname === 'samtierney10.com') {
+                // Render hosted backend
+                apiBase = 'https://wolf-golf-game.onrender.com/';
             }
         }
 
         let url = '';
 
-        if (val && /^\d+$/.test(val)) {
+        if (val && /^\d+$/.test(val) && val.length > 4) {
             // Numeric -> GHIN ID search
-            url = `${apiBase}/api/handicaps/${val}`;
+            url = `${apiBase}api/handicaps/${val}`;
         } else if (nameVal) {
             // Clean up name: remove common separators like commas or dots
             const cleanedName = nameVal.replace(/[,.]/g, ' ').trim();
@@ -735,7 +735,7 @@ class RollReRollGame {
 
             if (state === 'Custom') state = '';
 
-            url = `${apiBase}/api/handicaps/search?last_name=${encodeURIComponent(lastName)}`;
+            url = `${apiBase}api/handicaps/search?last_name=${encodeURIComponent(lastName)}`;
             if (firstName) url += `&first_name=${encodeURIComponent(firstName)}`;
             if (state) url += `&state=${encodeURIComponent(state)}`;
 
